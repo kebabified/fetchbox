@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Fetchbox</title>
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <img src="icons/32.png" alt="" width="22" height="22">
+    <h1>fetchbox</h1>
+    <span id="conn" class="conn" title="">…</span>
+  </header>
+
+  <section class="page">
+    <div id="pageHost" class="host">…</div>
+    <div id="pageStatus" class="status">checking this page…</div>
+    <div class="actions">
+      <button data-mode="auto" class="primary"><span>↓</span> video</button>
+      <button data-mode="audio"><span>♪</span> audio</button>
+      <button data-mode="mute"><span>⊘</span> mute</button>
+    </div>
+    <label id="plRow" class="row hidden"><input type="checkbox" id="playlist"> whole playlist / channel</label>
+    <div id="result" class="result"></div>
+  </section>
+
+  <section id="dlSection" class="downloads hidden">
+    <div class="dlhead">downloads <span class="hint">· running in the background</span></div>
+    <div id="dlList"></div>
+  </section>
+
+  <section class="settings">
+    <label class="row"><input type="checkbox" id="postButtons"> buttons on posts &amp; thumbnails</label>
+    <label class="row"><input type="checkbox" id="hoverButtons"> button when hovering any video</label>
+    <label class="row"><input type="checkbox" id="sendCookies"> use my login for this site
+      <small>sends this site's cookies to Fetchbox for private / members-only posts</small></label>
+  </section>
+
+  <footer>
+    <button id="open" class="link">open Fetchbox</button>
+    <span class="hint">right-click any link or video for more</span>
+  </footer>
+<script src="popup.js"></script>
+</body>
+</html>

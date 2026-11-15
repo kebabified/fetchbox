@@ -1,0 +1,51 @@
+{
+  "manifest_version": 3,
+  "name": "Fetchbox",
+  "description": "Download videos and audio from posts on any site yt-dlp supports, straight into Fetchbox.",
+  "version": "2.0.0",
+  "minimum_chrome_version": "116",
+  "icons": {
+    "16": "icons/16.png",
+    "32": "icons/32.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "action": {
+    "default_title": "Fetchbox",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/16.png",
+      "32": "icons/32.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "nativeMessaging",
+    "contextMenus",
+    "storage",
+    "tabs",
+    "notifications"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlVcCAquuE8rdNFS6cH5kD7ifcOTv1Q/OADzybO66XHJmn3iIb78Dr8QtEJhkYzBPcZnY6BpXJL6CsnkSEq9Bd2FdOiVxaqAR3bqypo7GZREY+Q5Tl1nKkB3phl3e7jVDvNXqxTGeNxYYGGvQWNA1OZifxYb27mf9OW+FGAwE7dHDWUOucmU1jXXZOEVMWrGbzFJzesPMYiVWVSHUPBE6T1FuVQLfs6Il3BWmTg2OU5XnVRI6IZGCsRdOqyGvd4I2Gir5PlC9nQmhbsn+7Ae2hyBdrTRr0eM+SYkFxUOQffnX9hkq+OB0BpZ7z006BCXZygz6R5BHaul/SwnrslYP1QIDAQAB",
+  "optional_permissions": [
+    "cookies"
+  ]
+}

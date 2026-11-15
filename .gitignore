@@ -1,0 +1,19 @@
+# build output and packages
+target/
+dist/
+/fetchbox.exe
+/fetchbox-host.exe
+
+# created on this PC at run time: downloaded tools, logs, temp files, browser-helper registration
+runtime/
+logs/
+tmp/
+native/
+settings/
+portable.txt
+*.lnk
+
+# Python helper environment (tools/ scripts) and the retired Python app
+.venv/
+__pycache__/
+legacy-python/
