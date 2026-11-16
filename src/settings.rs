@@ -41,6 +41,8 @@ pub struct Settings {
     /// API key for a custom cobalt instance, encrypted for this Windows user (DPAPI), base64
     pub cobalt_key_enc: String,
     pub appearance: String,
+    /// look for a new Fetchbox release on GitHub when the window opens
+    pub check_updates: bool,
     pub settings_version: u64,
 }
 
@@ -63,6 +65,7 @@ impl Default for Settings {
             cobalt_url: String::new(),
             cobalt_key_enc: String::new(),
             appearance: "dark".into(),
+            check_updates: true,
             settings_version: VERSION,
         }
     }
@@ -121,6 +124,7 @@ impl Settings {
         pick(&v, "appearance", APPEARANCES, &mut s.appearance);
         s.playlist = flag(&v, "playlist").unwrap_or(s.playlist);
         s.metadata = flag(&v, "metadata").unwrap_or(s.metadata);
+        s.check_updates = flag(&v, "check_updates").unwrap_or(s.check_updates);
         s.cobalt_url = text(&v, "cobalt_url").unwrap_or_default().trim().to_string();
         s.cobalt_key_enc = text(&v, "cobalt_key_enc").unwrap_or_default();
         s.cobalt_local = match flag(&v, "cobalt_local") {

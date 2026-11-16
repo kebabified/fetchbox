@@ -1,6 +1,7 @@
 //! fetchbox-host.exe — background service, browser helper and installer (no window).
 //!
-//!   fetchbox-host chrome-extension://<id>/   started by the browser (native messaging)
+//!   fetchbox-host chrome-extension://<id>/   started by a Chrome-family browser (native messaging)
+//!   fetchbox-host <manifest>.json <id>       started by Firefox (native messaging)
 //!   fetchbox-host service                    the background download service
 //!   fetchbox-host install | uninstall        register / unregister the browser helper
 //!   fetchbox-host check <url>…               is this link downloadable?
@@ -16,6 +17,8 @@ fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let code = match args.first().map(String::as_str) {
         Some(origin) if origin.starts_with("chrome-extension://") => host::run(origin),
+        // Firefox passes the path of the helper's manifest, then the extension's ID
+        Some(manifest) if manifest.to_ascii_lowercase().ends_with(".json") && args.len() >= 2 => host::run(&args[1]),
         Some("service") => service::run(),
         Some("install") => match install::install() {
             Ok(browsers) => {

@@ -6,6 +6,9 @@ download button on posts and videos.
 - **Window** (`fetchbox.exe`): paste links, pick Video / Audio / Video without sound, watch the queue.
 - **Browser extension** (`extension/`): buttons on YouTube, TikTok, Instagram, X and Reddit posts, a hover
   button on any supported video, a right-click menu and a toolbar popup. Works with the window closed.
+  One folder serves Chromium-based browsers and Firefox 128+.
+- **Updates**: the window checks GitHub releases (`REPO` in `src/update.rs`); an installed copy downloads
+  the new installer, checks it against GitHub's published SHA-256 and runs it with `/SILENT /RELAUNCH`.
 - **One queue**: the window and the extension talk to the same background service, so each shows the
   other's downloads.
 
@@ -37,7 +40,7 @@ instance in Settings instead.
 ```
 fetchbox.exe         the window (client of the service)
 fetchbox-host.exe    background service · browser helper (native messaging) · installer
-extension/           the Chrome-family extension (plain JavaScript, no build step)
+extension/           the browser extension for Chromium and Firefox (plain JavaScript, no build step)
 src/                 Rust source      assets/extractors.json   yt-dlp's site URL patterns
 tools/               dump_extractors.py (refresh the patterns), make_icon.py
 runtime/             downloaded tools: yt-dlp, ffmpeg, node, cobalt     logs/   log files
@@ -73,15 +76,17 @@ Neither can add the browser extension: that needs a store listing or the unpacke
   named pipe that only your Windows account (and SYSTEM) can open, and that refuses remote clients.
   The local cobalt server listens on 127.0.0.1 only.
 - **Only the Fetchbox extension can start the helper.** The browser enforces the allowed extension ID from
-  the helper's manifest, and the helper checks it again. Add more IDs (a store build, a fork) one per
-  line in `native/allowed_extensions.txt`, then reconnect.
+  the helper's manifest, and the helper checks it again (Chrome passes the extension's origin, Firefox
+  its ID `fetchbox@fetchbox`). Add more IDs (a store build, a fork) one per line in
+  `native/allowed_extensions.txt`, then reconnect.
 - **Links are data, never commands.** Only `http(s)` links are accepted; yt-dlp receives them after `--`
   and runs with `--ignore-config --no-plugin-dirs`, so nothing on the page or the PC can add options.
   Message sizes, queue length and cookie counts are capped.
 - **Downloads are verified.** yt-dlp, ffmpeg and Node.js are fetched over HTTPS from their official release
   pages and checked against the published SHA-256 before being unpacked or run. Archives can't write
   outside their folder. cobalt's source comes from its GitHub repository over HTTPS (it publishes no
-  checksums) and its dependencies install from its lockfile.
+  checksums) and its dependencies install from its lockfile. A Fetchbox update is only run if it was
+  downloaded from github.com and matches the SHA-256 GitHub publishes for that release file.
 - **Files stay in your download folder.** File names from servers are sanitised and can't escape it.
 - **Cookies are opt-in.** The extension asks for the browser's cookies permission only when you turn on
   "use my login for this site", sends only the cookies for the site being downloaded, and Fetchbox deletes
@@ -98,5 +103,8 @@ Neither can add the browser extension: that needs a store listing or the unpacke
 - Sign the two programs (unsigned downloads trigger SmartScreen warnings).
 - Publish the extension to a store, or keep the unpacked build; a store build gets a new ID — add it to
   `EXTENSION_ID` in `src/install.rs`. Keep `native/extension_key.pem` private.
+- Firefox only keeps signed add-ons. Sign the extension through addons.mozilla.org (free; "unlisted" if it
+  shouldn't appear in the store) and attach the `.xpi` to releases; until then it loads as a temporary add-on.
+- Make the repository public, or the in-app update check can't see releases.
 - Site patterns in `assets/extractors.json` are a snapshot; refresh with `tools/dump_extractors.py` when
   yt-dlp adds sites.

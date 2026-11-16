@@ -1,5 +1,5 @@
 ; Fetchbox installer (Inno Setup 6). Built by package.ps1:
-;   ISCC /DAppVersion=2.0.1 /DStage=..\dist\Fetchbox /DOut=..\dist installer\fetchbox.iss
+;   ISCC /DAppVersion=2.0.2 /DStage=..\dist\Fetchbox /DOut=..\dist installer\fetchbox.iss
 ;
 ; Installs for the current user only (no admin prompt) into %LOCALAPPDATA%\Programs\Fetchbox,
 ; registers the browser helper, and adds an uninstaller.
@@ -53,6 +53,8 @@ Name: "{userdesktop}\Fetchbox"; Filename: "{app}\fetchbox.exe"; Tasks: desktopic
 Filename: "{app}\fetchbox-host.exe"; Parameters: "install"; Flags: runhidden; StatusMsg: "Connecting your browsers..."
 ; open on Settings, where the steps for adding the browser extension are
 Filename: "{app}\fetchbox.exe"; Parameters: "--settings"; Description: "Open Fetchbox (shows how to add the browser extension)"; Flags: nowait postinstall skipifsilent
+; an update started from inside Fetchbox (/SILENT /RELAUNCH) opens it again when done
+Filename: "{app}\fetchbox.exe"; Flags: nowait; Check: Relaunch
 
 [UninstallRun]
 Filename: "{app}\fetchbox-host.exe"; Parameters: "uninstall"; Flags: runhidden; RunOnceId: "UnregisterHelper"
@@ -75,6 +77,11 @@ begin
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/IM fetchbox.exe /F', '', SW_HIDE, ewWaitUntilTerminated, Code);
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/IM fetchbox-host.exe /T /F', '', SW_HIDE, ewWaitUntilTerminated, Code);
   Sleep(400);
+end;
+
+function Relaunch: Boolean;
+begin
+  Result := WizardSilent and (Pos('/RELAUNCH', Uppercase(GetCmdTail)) > 0);
 end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;

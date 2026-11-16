@@ -24,15 +24,27 @@ That's all you need for the window. The browser extension is optional and takes 
 
 ### Add the browser extension (optional)
 
-Works in Chrome, Edge, Brave, Vivaldi, Helium and other Chromium-based browsers. Not Firefox.
+Works in Chrome, Edge, Brave, Vivaldi, Helium and other Chromium-based browsers, and in Firefox 128 or newer.
 Browsers don't let installers add extensions, so this part is by hand.
 
-1. In Fetchbox, open **Settings**. Portable copy: click **Connect browsers** (the installer already did this).
-2. In your browser, open the extensions page (`chrome://extensions`, or `edge://extensions` in Edge).
-3. Turn on **Developer mode** (top right).
-4. Click **Load unpacked** and choose the `extension` folder inside the Fetchbox folder.
+First, in Fetchbox, open **Settings**. Portable copy: click **Connect browsers** (the installer already did this).
+
+**Chrome, Edge, Brave, Helium and the like**
+
+1. Open the extensions page (`chrome://extensions`, or `edge://extensions` in Edge).
+2. Turn on **Developer mode** (top right).
+3. Click **Load unpacked** and choose the `extension` folder inside the Fetchbox folder.
    (Settings shows the exact path, with a Copy button.)
-5. Restart the browser, then pin Fetchbox from the puzzle-piece menu.
+4. Restart the browser, then pin Fetchbox from the puzzle-piece menu.
+
+**Firefox**
+
+1. Open `about:debugging`, then **This Firefox**.
+2. Click **Load Temporary Add-on…** and choose `manifest.json` inside the `extension` folder.
+3. Pin Fetchbox from the puzzle-piece menu.
+
+Firefox removes add-ons loaded this way when it closes, so repeat these steps after restarting it.
+That goes away once a signed version of the extension is published.
 
 If you move the Fetchbox folder later, click **Connect browsers** again and reload the extension.
 
@@ -75,8 +87,11 @@ Your browser asks for permission once. Fetchbox then uses that site's login for 
   (about 150 MB, one time). You can use a different cobalt server in Settings.
 - **Something stopped working on one site?** Sites change often. Open **Settings** and click
   **Update yt-dlp**, and **Update cobalt** if you use it.
-- **Privacy**: nothing is sent anywhere except to the site you're downloading from. There is no account
-  and no tracking.
+- **Updates**: when the window opens, Fetchbox asks GitHub whether there's a newer version and shows
+  a bar if there is. **Update** downloads the installer, checks it and installs it, then reopens Fetchbox.
+  A portable copy opens the download page instead. Turn this off, or check by hand, under Settings → About.
+- **Privacy**: nothing is sent anywhere except to the site you're downloading from, and to GitHub for the
+  update check. There is no account and no tracking.
 
 ## Problems
 

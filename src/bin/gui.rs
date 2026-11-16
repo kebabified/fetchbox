@@ -13,6 +13,7 @@ use eframe::egui::{
 use serde_json::{json, Value};
 
 use fetchbox::settings::{self, Settings};
+use fetchbox::update::{self, Release};
 use fetchbox::{cobalt, install, paths, service, util, win, APP_NAME, VERSION};
 
 // status colours, readable on both dark and light backgrounds
@@ -58,6 +59,11 @@ struct Shared {
     picked_dir: Option<String>,
     cobalt_test: Option<(String, bool)>,
     connect_result: Option<(String, bool)>,
+    /// a newer release on GitHub
+    update: Option<Release>,
+    /// result of "Check for updates", or the update's download progress
+    update_note: Option<(String, bool)>,
+    updating: bool,
 }
 
 struct App {
@@ -69,6 +75,8 @@ struct App {
     show_options: bool,
     cobalt_key: String,
     helper_ok: bool,
+    /// "Later" on the update banner (until the window is reopened)
+    update_dismissed: bool,
     shared: Arc<Mutex<Shared>>,
     ctx: egui::Context,
 }
@@ -100,7 +108,7 @@ impl App {
                 std::thread::sleep(Duration::from_millis(if busy { 250 } else { 700 }));
             });
         }
-        App {
+        let app = App {
             view: if std::env::args().any(|a| a == "--settings") { View::Settings } else { View::Downloads },
             cobalt_key: settings.cobalt_key(),
             saved: settings.clone(),
@@ -109,9 +117,73 @@ impl App {
             focus_url: true,
             show_options: false,
             helper_ok: install::is_current(),
+            update_dismissed: false,
             shared,
             ctx: ctx.clone(),
+        };
+        if app.settings.check_updates {
+            app.check_updates(false);
         }
+        app
+    }
+
+    /// Ask GitHub for a newer release. Quiet unless `manual` (then the result shows under About).
+    fn check_updates(&self, manual: bool) {
+        let (shared, ctx) = (self.shared.clone(), self.ctx.clone());
+        if manual {
+            shared.lock().unwrap().update_note = Some(("Checking…".into(), true));
+        }
+        std::thread::spawn(move || {
+            let result = update::latest();
+            let mut s = shared.lock().unwrap();
+            match result {
+                Ok(r) if update::newer(&r.version, VERSION) => {
+                    s.update_note = manual.then(|| (format!("Fetchbox {} is available", r.version), true));
+                    s.update = Some(r);
+                }
+                Ok(_) => s.update_note = manual.then(|| ("You have the latest version".into(), true)),
+                Err(e) => s.update_note = manual.then(|| (format!("Couldn't check for updates: {e}"), false)),
+            }
+            ctx.request_repaint();
+        });
+    }
+
+    /// Installed copy: download the installer, check it, run it and close. Portable copy: open the release page.
+    fn install_update(&self, release: Release) {
+        let Some(asset) = release.installer.clone().filter(|_| !paths::is_portable()) else {
+            win::open_web(&release.page);
+            return;
+        };
+        let (shared, ctx) = (self.shared.clone(), self.ctx.clone());
+        shared.lock().unwrap().updating = true;
+        std::thread::spawn(move || {
+            let note = |text: String, ok: bool| {
+                shared.lock().unwrap().update_note = Some((text, ok));
+                ctx.request_repaint();
+            };
+            let mut last = 0;
+            let result = update::download(&asset, &mut |done, total| {
+                let pct = total.filter(|t| *t > 0).map(|t| done * 100 / t).unwrap_or(0);
+                if pct != last {
+                    last = pct;
+                    note(format!("Downloading Fetchbox {}… {pct}%", release.version), true);
+                }
+                true
+            });
+            match result.and_then(|exe| {
+                // /RELAUNCH: the installer opens Fetchbox again when it's done
+                win::spawn_detached(&exe, &["/SILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/RELAUNCH"]).map_err(|e| e.to_string())
+            }) {
+                Ok(()) => {
+                    note(format!("Installing Fetchbox {}…", release.version), true);
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                }
+                Err(e) => {
+                    shared.lock().unwrap().updating = false;
+                    note(format!("Update failed: {e}"), false);
+                }
+            }
+        });
     }
 
     fn toast(&self, text: impl Into<String>, ok: bool) {
@@ -169,6 +241,38 @@ impl App {
 
     // ── downloads view ──
     fn downloads(&mut self, ui: &mut Ui, status: &Option<Value>) {
+        // a newer release: one line, with Update / What's new / Later
+        let (release, note, updating) = {
+            let s = self.shared.lock().unwrap();
+            (s.update.clone(), s.update_note.clone(), s.updating)
+        };
+        if let Some(r) = release.filter(|_| !self.update_dismissed) {
+            card(ui).show(ui, |ui| {
+                ui.horizontal(|ui| {
+                    if updating {
+                        ui.label(note.map(|n| n.0).unwrap_or_default());
+                        return;
+                    }
+                    ui.label(RichText::new(format!("Fetchbox {} is available", r.version)).strong());
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        let auto = r.installer.is_some() && !paths::is_portable();
+                        let go = primary_button(ui, if auto { "Update" } else { "Download" })
+                            .on_hover_text(if auto { "Download, install and reopen Fetchbox" } else { "Open the release page" });
+                        if go.clicked() {
+                            self.install_update(r.clone());
+                        }
+                        if ui.button("What's new").clicked() {
+                            win::open_web(&r.page);
+                        }
+                        if ui.button("Later").clicked() {
+                            self.update_dismissed = true;
+                        }
+                    });
+                });
+            });
+            ui.add_space(8.0);
+        }
+
         // link box
         card(ui).show(ui, |ui| {
             ui.horizontal(|ui| {
@@ -353,7 +457,7 @@ impl App {
                 if let Some((text, ok)) = self.shared.lock().unwrap().connect_result.clone() {
                     ui.colored_label(if ok { green(ui) } else { red(ui) }, text);
                 }
-                ui.label(muted(ui, "To add the extension: open your browser's extensions page, turn on Developer mode, choose “Load unpacked” and pick this folder:"));
+                ui.label(muted(ui, "Chrome, Edge, Brave, Helium…: open the extensions page, turn on Developer mode, choose “Load unpacked” and pick this folder.\nFirefox: open about:debugging → This Firefox → “Load Temporary Add-on…” and pick manifest.json in this folder (Firefox forgets it when it closes)."));
                 ui.horizontal(|ui| {
                     let dir = install::extension_dir();
                     ui.monospace(dir.to_string_lossy());
@@ -459,6 +563,16 @@ impl App {
             section(ui, "About", |ui| {
                 ui.label(format!("Fetchbox {VERSION}"));
                 ui.label(muted(ui, "Only download what you have the right to keep."));
+                ui.horizontal(|ui| {
+                    if ui.button("Check for updates").clicked() {
+                        self.update_dismissed = false;
+                        self.check_updates(true);
+                    }
+                    ui.checkbox(&mut self.settings.check_updates, "Check when Fetchbox opens");
+                });
+                if let Some((text, ok)) = self.shared.lock().unwrap().update_note.clone() {
+                    ui.colored_label(if ok { ui.visuals().text_color() } else { red(ui) }, text);
+                }
                 ui.horizontal(|ui| {
                     if ui.button("Open logs folder").clicked() {
                         let _ = std::fs::create_dir_all(paths::log_dir());

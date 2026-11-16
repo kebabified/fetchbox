@@ -92,10 +92,11 @@ fn handle(msg: &Value, cache: &Mutex<HashMap<String, sites::Verdict>>) -> Value 
     }
 }
 
-/// Entry point when a browser starts us: `fetchbox-host.exe chrome-extension://<id>/ …`.
+/// Entry point when a browser starts us. Chrome-family browsers pass the extension's origin
+/// (`chrome-extension://<id>/`); Firefox passes the extension's ID.
 pub fn run(origin: &str) -> i32 {
     // The browser already enforces this through the helper's manifest; refuse anything else too.
-    if !install::allowed_origins().iter().any(|o| o == origin) {
+    if !install::caller_allowed(origin) {
         log("host", &format!("refused: {origin} is not an allowed extension"));
         return 2;
     }

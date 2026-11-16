@@ -88,6 +88,13 @@ pub fn process_is(pid: u32, image: &str) -> bool {
         .unwrap_or(false)
 }
 
+/// Open a web page in the default browser (https only).
+pub fn open_web(url: &str) {
+    if url.starts_with("https://") && crate::util::valid_url(url) {
+        let _ = Command::new("explorer").arg(url).spawn();
+    }
+}
+
 /// Show a file in Explorer (or open the folder if the file is gone).
 pub fn reveal(path: &Path) {
     if path.is_file() {

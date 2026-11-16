@@ -1,8 +1,10 @@
-// Fetchbox extension — background service worker.
+// Fetchbox extension — background script (a service worker in Chrome, an event page in Firefox).
 // Owns the connection to the Fetchbox helper (native messaging), the right-click menu,
 // the toolbar badge, and answers questions from the page buttons.
 
 const HOST = "com.fetchbox.host";
+// Firefox notifications have no buttons and no second line
+const FIREFOX = typeof browser !== "undefined" && typeof browser.runtime?.getBrowserInfo === "function";
 const DEFAULTS = { postButtons: true, hoverButtons: true, sendCookies: false };
 
 let port = null;
@@ -125,18 +127,19 @@ async function pollDownloads() {
 
 function notify(j) {
   const ok = j.state === "done";
-  chrome.notifications.create(`fb-${j.id}`, {
-    type: "basic",
-    iconUrl: "icons/128.png",
-    title: ok ? "Downloaded" : "Download failed",
-    message: ok ? (j.file || j.title) : (j.text || "failed"),
-    contextMessage: ok ? (j.text || "").split("·").slice(1).join("·").trim() : j.title,
-    buttons: ok ? [{ title: "Show in folder" }] : [],
-    priority: 0,
-  });
+  const message = ok ? (j.file || j.title) : (j.text || "failed");
+  const detail = ok ? (j.text || "").split("·").slice(1).join("·").trim() : j.title;
+  const opts = { type: "basic", iconUrl: "icons/128.png", title: ok ? "Downloaded" : "Download failed" };
+  if (FIREFOX) {
+    // clicking the notification still opens the folder
+    Object.assign(opts, { message: [message, detail, ok ? "Click to show in folder" : ""].filter(Boolean).join("\n") });
+  } else {
+    Object.assign(opts, { message, contextMessage: detail, buttons: ok ? [{ title: "Show in folder" }] : [], priority: 0 });
+  }
+  chrome.notifications.create(`fb-${j.id}`, opts);
 }
 const revealFrom = (nid) => nid.startsWith("fb-") && ask({ type: "reveal", job: Number(nid.slice(3)) });
-chrome.notifications.onButtonClicked.addListener((nid) => { revealFrom(nid); chrome.notifications.clear(nid); });
+chrome.notifications.onButtonClicked?.addListener((nid) => { revealFrom(nid); chrome.notifications.clear(nid); });
 chrome.notifications.onClicked.addListener((nid) => { revealFrom(nid); chrome.notifications.clear(nid); });
 
 // ── messages from page buttons and the popup ──
