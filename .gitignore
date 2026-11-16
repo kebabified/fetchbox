@@ -17,3 +17,7 @@ portable.txt
 .venv/
 __pycache__/
 legacy-python/
+
+# Mozilla web-ext tool used by tools/sign-firefox.ps1
+tools/.web-ext/
+extension/.amo-upload-uuid

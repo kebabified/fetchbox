@@ -1,5 +1,5 @@
 ; Fetchbox installer (Inno Setup 6). Built by package.ps1:
-;   ISCC /DAppVersion=2.0.3 /DStage=..\dist\Fetchbox /DOut=..\dist installer\fetchbox.iss
+;   ISCC /DAppVersion=2.0.4 /DStage=..\dist\Fetchbox /DOut=..\dist installer\fetchbox.iss
 ;
 ; Installs for the current user only (no admin prompt) into %LOCALAPPDATA%\Programs\Fetchbox,
 ; registers the browser helper, and adds an uninstaller.

@@ -457,7 +457,7 @@ impl App {
                 if let Some((text, ok)) = self.shared.lock().unwrap().connect_result.clone() {
                     ui.colored_label(if ok { green(ui) } else { red(ui) }, text);
                 }
-                ui.label(muted(ui, "Chrome, Edge, Brave, Helium…: open the extensions page, turn on Developer mode, choose “Load unpacked” and pick this folder.\nFirefox: open about:debugging → This Firefox → “Load Temporary Add-on…” and pick manifest.json in this folder (Firefox forgets it when it closes)."));
+                ui.label(muted(ui, "Chrome, Edge, Brave, Helium…: open the extensions page, turn on Developer mode, choose “Load unpacked” and pick this folder:"));
                 ui.horizontal(|ui| {
                     let dir = install::extension_dir();
                     ui.monospace(dir.to_string_lossy());
@@ -466,6 +466,12 @@ impl App {
                     }
                     if ui.small_button("Open").clicked() {
                         win::reveal(&dir);
+                    }
+                });
+                ui.horizontal(|ui| {
+                    ui.label(muted(ui, "Firefox: download the signed add-on (…-firefox.xpi) and drag it into a Firefox window."));
+                    if ui.small_button("Get it").on_hover_text("Opens the latest release on GitHub").clicked() {
+                        win::open_web(&format!("https://github.com/{}/releases/latest", update::REPO));
                     }
                 });
             });

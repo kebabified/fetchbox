@@ -1,0 +1,13 @@
+{
+  "addons": {
+    "fetchbox@fetchbox": {
+      "updates": [
+        {
+          "version": "2.0.4",
+          "update_link": "https://github.com/kebabified/fetchbox/releases/download/v2.0.4/Fetchbox-2.0.4-firefox.xpi",
+          "update_hash": "sha256:bfff843718bbfd76d553f833b73c70a86e82ca35dc1e4fc974ed3a1ced914940"
+        }
+      ]
+    }
+  }
+}

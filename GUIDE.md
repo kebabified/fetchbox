@@ -39,12 +39,13 @@ First, in Fetchbox, open **Settings**. Portable copy: click **Connect browsers**
 
 **Firefox**
 
-1. Open `about:debugging`, then **This Firefox**.
-2. Click **Load Temporary Add-on…** and choose `manifest.json` inside the `extension` folder.
+1. Download `Fetchbox-…-firefox.xpi` from the
+   [latest release](https://github.com/kebabified/fetchbox/releases/latest)
+   (Settings → **Get it** opens that page).
+2. Drag the file into a Firefox window and click **Add**.
 3. Pin Fetchbox from the puzzle-piece menu.
 
-Firefox removes add-ons loaded this way when it closes, so repeat these steps after restarting it.
-That goes away once a signed version of the extension is published.
+The add-on is signed by Mozilla, so it stays installed and updates itself.
 
 If you move the Fetchbox folder later, click **Connect browsers** again and reload the extension.
 

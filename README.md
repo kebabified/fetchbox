@@ -70,6 +70,16 @@ Writes `dist\Fetchbox-<version>-setup.exe` (per-user installer, `installer/fetch
 `dist\Fetchbox-<version>-portable.zip`. A `portable.txt` next to the programs keeps settings in the folder.
 Neither can add the browser extension: that needs a store listing or the unpacked steps in GUIDE.md.
 
+Then sign the Firefox add-on (needs your addons.mozilla.org API key; the secret is asked for and never stored):
+
+```
+powershell -ExecutionPolicy Bypass -File tools\sign-firefox.ps1
+```
+
+It writes `dist\Fetchbox-<version>-firefox.xpi` (attach it to the release) and `firefox/updates.json`
+(commit it after the release is published: installed copies read it from `main` to update themselves).
+Mozilla signs each version once, so bump the version in `extension/manifest.json` before signing again.
+
 ## Security and privacy
 
 - **No network port, no telemetry.** The window, the browser helper and the service talk over a Windows
@@ -103,8 +113,7 @@ Neither can add the browser extension: that needs a store listing or the unpacke
 - Sign the two programs (unsigned downloads trigger SmartScreen warnings).
 - Publish the extension to a store, or keep the unpacked build; a store build gets a new ID — add it to
   `EXTENSION_ID` in `src/install.rs`. Keep `native/extension_key.pem` private.
-- Firefox only keeps signed add-ons. Sign the extension through addons.mozilla.org (free; "unlisted" if it
-  shouldn't appear in the store) and attach the `.xpi` to releases; until then it loads as a temporary add-on.
-- Make the repository public, or the in-app update check can't see releases.
+- Firefox only keeps signed add-ons: the extension is signed "unlisted" on addons.mozilla.org (not shown in
+  the store) by `tools/sign-firefox.ps1`, and updates itself through `firefox/updates.json`.
 - Site patterns in `assets/extractors.json` are a snapshot; refresh with `tools/dump_extractors.py` when
   yt-dlp adds sites.
