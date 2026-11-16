@@ -66,19 +66,30 @@ winget install JRSoftware.InnoSetup --scope user
 powershell -ExecutionPolicy Bypass -File package.ps1
 ```
 
-Writes `dist\Fetchbox-<version>-setup.exe` (per-user installer, `installer/fetchbox.iss`) and
-`dist\Fetchbox-<version>-portable.zip`. A `portable.txt` next to the programs keeps settings in the folder.
-Neither can add the browser extension: that needs a store listing or the unpacked steps in GUIDE.md.
+Writes into `dist\`:
 
-Then sign the Firefox add-on (needs your addons.mozilla.org API key; the secret is asked for and never stored):
+- `Fetchbox-<version>-setup.exe`: per-user installer (`installer/fetchbox.iss`)
+- `Fetchbox-<version>-portable.zip`: a `portable.txt` next to the programs keeps settings in the folder
+- `Fetchbox-<version>-firefox.xpi`: the Firefox add-on, signed by Mozilla
 
-```
-powershell -ExecutionPolicy Bypass -File tools\sign-firefox.ps1
-```
+Attach all three to the GitHub release `v<version>`.
 
-It writes `dist\Fetchbox-<version>-firefox.xpi` (attach it to the release) and `firefox/updates.json`
-(commit it after the release is published: installed copies read it from `main` to update themselves).
-Mozilla signs each version once, so bump the version in `extension/manifest.json` before signing again.
+### Versions and the Firefox add-on
+
+The app's version is in `Cargo.toml`. The browser extension has its own, in `extension/manifest.json`,
+because Mozilla signs each add-on version once. `package.ps1` runs `tools\sign-firefox.ps1`, which
+fingerprints `extension/` and compares it with `firefox/signed.json`:
+
+- **unchanged**: reuses `firefox/fetchbox.xpi`. No network, no questions.
+- **changed**: raises the add-on's version if needed, has Mozilla sign it (channel "unlisted", not shown
+  in the store), and updates `firefox/fetchbox.xpi`, `firefox/signed.json` and `firefox/updates.json`.
+  Commit those and `extension/manifest.json`, and publish the release, since `updates.json` links to
+  this release's `.xpi`. Installed add-ons read `updates.json` from `main` and update themselves.
+
+Signing uses your addons.mozilla.org API key, asked for the first time, checked with Mozilla, and saved
+encrypted for your Windows account in `%LOCALAPPDATA%\Fetchbox-dev\amo-credentials.xml`.
+`tools\sign-firefox.ps1 -Check` says whether signing is needed; `-SaveCredentials` and `-Forget`
+replace or delete the saved key.
 
 ## Security and privacy
 

@@ -1,12 +1,13 @@
 # Builds Fetchbox and packages it into dist\:
 #   Fetchbox-<version>-setup.exe     installer (current user, no admin)
 #   Fetchbox-<version>-portable.zip  unzip-and-run copy that keeps everything in its own folder
+#   Fetchbox-<version>-firefox.xpi   the Firefox add-on, signed by Mozilla (tools\sign-firefox.ps1)
 #
 # Needs what build.ps1 needs, plus Inno Setup for the installer:
 #   winget install JRSoftware.InnoSetup --scope user
 #
-# Usage:  powershell -ExecutionPolicy Bypass -File package.ps1 [-SkipBuild]
-param([switch]$SkipBuild)
+# Usage:  powershell -ExecutionPolicy Bypass -File package.ps1 [-SkipBuild] [-SkipFirefox]
+param([switch]$SkipBuild, [switch]$SkipFirefox)
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
@@ -36,6 +37,12 @@ if ($iscc) {
     Write-Warning "Inno Setup not found - only the portable zip was built."
 }
 Remove-Item $stage -Recurse -Force
+
+# the Firefox add-on: reused if unchanged, otherwise signed by Mozilla (see tools\sign-firefox.ps1)
+if (-not $SkipFirefox) {
+    & powershell -NoProfile -ExecutionPolicy Bypass -File tools\sign-firefox.ps1
+    if ($LASTEXITCODE) { exit $LASTEXITCODE }
+}
 
 Get-ChildItem dist | ForEach-Object {
     "{0}  {1:N1} MB  sha256 {2}" -f $_.Name, ($_.Length / 1MB), (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
