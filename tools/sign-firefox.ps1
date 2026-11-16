@@ -52,7 +52,8 @@ function ConvertTo-B64Url([byte[]]$b) { [Convert]::ToBase64String($b).TrimEnd('=
 
 # Asks Mozilla who these credentials belong to: true if they work.
 function Test-AmoCredentials([string]$issuer, [string]$secret) {
-    $now = [int][double]::Parse((Get-Date -UFormat %s))
+    # UTC seconds ("Get-Date -UFormat %s" is local time in Windows PowerShell, which Mozilla rejects)
+    $now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
     $header = ConvertTo-B64Url ([Text.Encoding]::UTF8.GetBytes('{"alg":"HS256","typ":"JWT"}'))
     $payload = ConvertTo-B64Url ([Text.Encoding]::UTF8.GetBytes((@{ iss = $issuer; jti = [guid]::NewGuid().ToString(); iat = $now; exp = $now + 60 } | ConvertTo-Json -Compress)))
     $hmac = New-Object Security.Cryptography.HMACSHA256 (, [Text.Encoding]::UTF8.GetBytes($secret))
