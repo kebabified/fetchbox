@@ -4,8 +4,10 @@
 // Every candidate link is checked against yt-dlp's own list of supported sites (via Fetchbox)
 // before a button appears, and channel/playlist/feed links are skipped.
 (() => {
-  if (window.__fetchboxLoaded) return;
-  window.__fetchboxLoaded = true;
+  // Run once per page, but take over from a copy left behind by an extension reload.
+  if (window.__fetchboxAlive?.()) return;
+  const isAlive = () => alive && !!chrome.runtime?.id;
+  window.__fetchboxAlive = isAlive;
 
   const TOP = window === window.top;
   let S = { postButtons: true, hoverButtons: true };
@@ -323,7 +325,11 @@
   // page-level pins must follow layout changes (content loading above them, expanding sections…)
   new ResizeObserver(scheduleLayout).observe(document.documentElement);
   if (document.body) new ResizeObserver(scheduleLayout).observe(document.body);
-  const layoutTimer = setInterval(scheduleLayout, 800); // catch posts that move (lazy loading, expanding text…)
+  const layoutTimer = setInterval(() => {
+    // the extension reloaded itself (e.g. after a Fetchbox update): step aside for the new copy
+    if (!chrome.runtime?.id) { fail("context invalidated"); return; }
+    scheduleLayout(); // catch posts that move (lazy loading, expanding text…)
+  }, 800);
   addEventListener("scroll", (e) => {
     occlude();  // same frame as the scroll: hide buttons the moment they reach a sticky bar
     if (e.target !== document && e.target !== document.documentElement) scheduleLayout(); // a box inside the page scrolled
@@ -400,9 +406,12 @@
       scan: () => {
         const out = [];
         for (const art of document.querySelectorAll("article")) {
-          const media = art.querySelector('video, img[src*="video_thumb"]');
+          // A quoted tweet is an <article> inside the quoting one: each tweet uses only its own video and link,
+          // so a video in the quoted tweet downloads that tweet, not the one quoting it.
+          const own = (n) => n.closest("article") === art;
+          const media = [...art.querySelectorAll('video, img[src*="video_thumb"]')].find(own);
           if (!media) continue;
-          const status = [...art.querySelectorAll('a[href*="/status/"]')]
+          const status = [...art.querySelectorAll('a[href*="/status/"]')].filter(own)
             .map((a) => abs(a.getAttribute("href"))?.match(/^(https:\/\/[^/]+\/[^/]+\/status\/\d+)/)?.[1]).find(Boolean);
           const el = media.closest('[data-testid="videoPlayer"], [data-testid="videoComponent"]') || media;
           if (status) out.push({ el, url: status });
@@ -502,6 +511,7 @@
     removeEventListener("pointermove", onMove);
     for (const el of [...anchors.keys()]) dropAnchor(el);
     host.remove();
+    if (window.__fetchboxAlive === isAlive) delete window.__fetchboxAlive;
   }
 
   function applySettings() {

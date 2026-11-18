@@ -335,8 +335,10 @@ impl App {
                     ui.label(muted(ui, "YouTube codec"));
                     combo(ui, "codec", &mut s.codec, settings::CODECS, |v| v.to_uppercase(), 130.0);
                     ui.label(muted(ui, "Use login from"));
-                    combo(ui, "ck", &mut s.cookies, settings::COOKIE_SOURCES, |v| if v == "none" { "Nothing".into() } else { v.to_string() }, 150.0)
-                        .on_hover_text("Let yt-dlp read this browser's cookies, for videos that need you signed in");
+                    combo(ui, "ck", &mut s.cookies, settings::COOKIE_SOURCES, |v| if v == "none" { "Nothing".into() } else { "Firefox".into() }, 150.0)
+                        .on_hover_text("For videos that need you signed in.\nFirefox: Fetchbox reads its login directly.\n\
+                                        Chrome, Edge, Brave and others lock theirs: turn on \"use my login for this site\"\n\
+                                        in the browser extension instead.");
                     ui.end_row();
                 });
                 ui.add_space(4.0);

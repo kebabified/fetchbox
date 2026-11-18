@@ -9,6 +9,8 @@ download button on posts and videos.
   One folder serves Chromium-based browsers and Firefox 128+.
 - **Updates**: the window checks GitHub releases (`REPO` in `src/update.rs`); an installed copy downloads
   the new installer, checks it against GitHub's published SHA-256 and runs it with `/SILENT /RELAUNCH`.
+  The unpacked extension notices its files on disk changed version, reloads itself (at most once per
+  version) and re-injects its page script into open tabs.
 - **One queue**: the window and the extension talk to the same background service, so each shows the
   other's downloads.
 

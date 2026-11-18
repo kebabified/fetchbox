@@ -14,7 +14,9 @@ pub const CODECS: &[&str] = &["h264", "vp9", "av1"];
 pub const AUDIO_FORMATS: &[&str] = &["mp3", "m4a", "opus", "flac", "wav", "best"];
 pub const BITRATES: &[&str] = &["320", "256", "192", "128", "96", "64"];
 pub const FILENAMES: &[&str] = &["title", "title [id]", "uploader - title"];
-pub const COOKIE_SOURCES: &[&str] = &["none", "firefox", "chrome", "edge", "brave", "opera", "vivaldi"];
+// Only Firefox: Chrome-family browsers lock their cookies on Windows so yt-dlp can't read them (the
+// extension's "use my login" sends them instead). An old saved "chrome" etc. falls back to "none".
+pub const COOKIE_SOURCES: &[&str] = &["none", "firefox"];
 pub const APPEARANCES: &[&str] = &["dark", "light", "system"];
 const VERSION: u64 = 3;
 

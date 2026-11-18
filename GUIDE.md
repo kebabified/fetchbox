@@ -64,7 +64,9 @@ Each download shows its progress. When it finishes, **Show in folder** opens it 
 Files go to your Downloads folder. Click **Change** at the bottom to pick another folder.
 
 **More options** has the rest: whole playlists, file naming, adding the title and cover art to the file,
-and using your browser's login for videos that need you signed in.
+and reading Firefox's login for videos that need you signed in. For Chrome, Edge, Brave and other
+Chrome-family browsers, use the extension's **use my login for this site** instead (see below): those
+browsers lock their login so other programs can't read it.
 
 ## Use the browser extension
 
@@ -77,7 +79,8 @@ and using your browser's login for videos that need you signed in.
 The Fetchbox window doesn't need to be open. Downloads run in the background and you get a notification
 when each one finishes. Open the window any time to see the same list.
 
-**Private or members-only posts**: in the extension's popup, turn on **use my login for this site**.
+**Private or members-only posts, or "Sign in to confirm you're not a bot"**: in the extension's popup,
+turn on **use my login for this site**.
 Your browser asks for permission once. Fetchbox then uses that site's login for the download only.
 
 ## Good to know
@@ -91,6 +94,8 @@ Your browser asks for permission once. Fetchbox then uses that site's login for 
 - **Updates**: when the window opens, Fetchbox asks GitHub whether there's a newer version and shows
   a bar if there is. **Update** downloads the installer, checks it and installs it, then reopens Fetchbox.
   A portable copy opens the download page instead. Turn this off, or check by hand, under Settings → About.
+  The browser extension comes along: Chrome-family browsers switch to the new one within a minute of
+  using it, without restarting or refreshing pages. Firefox updates its add-on by itself.
 - **Privacy**: nothing is sent anywhere except to the site you're downloading from, and to GitHub for the
   update check. There is no account and no tracking.
 

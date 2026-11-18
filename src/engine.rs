@@ -184,7 +184,7 @@ fn run(job: &Job, local: &LocalCobalt) {
             Err(Fail::Cancelled) => return job.finish("cancelled", "cancelled", None),
             Err(Fail::Error(_)) if job.cancelled() => return job.finish("cancelled", "cancelled", None),
             Err(Fail::Error(e)) => {
-                errors.push(clean_err(&e));
+                errors.push(explain(clean_err(&e), job.cookie_file.is_some()));
                 if i + 1 < order.len() {
                     job.set_progress(None, "yt-dlp failed, trying cobalt…");
                 }
@@ -192,6 +192,27 @@ fn run(job: &Job, local: &LocalCobalt) {
         }
     }
     job.finish("failed", errors.join("  |  "), None);
+}
+
+/// Turns the errors people can fix themselves into what to do about them.
+fn explain(err: String, sent_login: bool) -> String {
+    let e = err.to_ascii_lowercase();
+    if e.contains("dpapi") || e.contains("cookie database") || e.contains("decrypt") && e.contains("cookie") {
+        return "Fetchbox can't read that browser's login (the browser locks it). In Settings set \"Use login from\" to \
+                Nothing, and turn on \"use my login for this site\" in the browser extension instead."
+            .into();
+    }
+    let wants_login = e.contains("sign in to confirm") || e.contains("--cookies") || e.contains("login required")
+        || e.contains("requires authentication") || e.contains("use --username");
+    if wants_login && sent_login {
+        return "This site still wants you signed in: sign in to it in your browser, then download again.".into();
+    }
+    if wants_login {
+        return "This video needs you signed in: click the Fetchbox button in your browser's toolbar, turn on \
+                \"use my login for this site\", then download again."
+            .into();
+    }
+    err
 }
 
 // ── yt-dlp ──
@@ -569,6 +590,16 @@ mod tests {
         assert_eq!(route("https://x.com/a/status/1", "cobalt"), vec!["cobalt"]);
         assert_eq!(route("https://notyoutube.com/watch?v=x", "auto"), vec!["yt-dlp", "cobalt"]);
         assert_eq!(route("https://evil.example/?u=youtube.com", "cobalt"), vec!["cobalt"]);
+    }
+
+    #[test]
+    fn explains_login_errors() {
+        let bot = "[youtube] ZfRYswD8mQk: Sign in to confirm you’re not a bot. Use --cookies-from-browser or --cookies".to_string();
+        assert!(explain(bot.clone(), false).contains("use my login for this site"));
+        assert!(explain(bot, true).contains("sign in to it in your browser"));
+        assert!(explain("Failed to decrypt with DPAPI. See https://x".into(), false).contains("Use login from"));
+        assert!(explain("Could not copy Chrome cookie database".into(), false).contains("Use login from"));
+        assert_eq!(explain("HTTP Error 404".into(), false), "HTTP Error 404");
     }
 
     #[test]

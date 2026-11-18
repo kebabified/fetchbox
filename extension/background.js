@@ -145,6 +145,7 @@ chrome.notifications.onClicked.addListener((nid) => { revealFrom(nid); chrome.no
 // ── messages from page buttons and the popup ──
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   if (sender.id !== chrome.runtime.id || !msg || typeof msg.type !== "string") return; // our own pages and scripts only
+  selfUpdate();
   (async () => {
     switch (msg.type) {
       case "check": return reply({ ok: true, results: await check(msg.urls || []) });
@@ -204,5 +205,39 @@ chrome.tabs.onUpdated.addListener((tabId, change, tab) => {
   if (change.url || change.status === "complete") badge(tabId, tab.url).catch(() => {});
 });
 chrome.tabs.onActivated.addListener(({ tabId }) => {
+  selfUpdate();
   chrome.tabs.get(tabId).then((t) => badge(tabId, t.url)).catch(() => {});
+});
+
+// ── staying up to date ──
+// Chrome-family browsers run this extension straight from Fetchbox's folder ("Load unpacked"), so updating
+// Fetchbox replaces these files: reload when the copy on disk is a different version from the one running.
+// Firefox runs the signed add-on, which Firefox itself updates (about once a day, applied straight away).
+const RUNNING = chrome.runtime.getManifest().version;
+let lastSelfCheck = 0;
+async function selfUpdate() {
+  if (FIREFOX || Date.now() - lastSelfCheck < 60_000) return;
+  lastSelfCheck = Date.now();
+  try {
+    const disk = await (await fetch(chrome.runtime.getURL("manifest.json"), { cache: "no-store" })).json();
+    if (!disk.version || disk.version === RUNNING) return;
+    // reload once per new version, so a reload that didn't take can't turn into a loop
+    const { reloadedFor } = await chrome.storage.local.get("reloadedFor");
+    if (reloadedFor === disk.version) return;
+    await chrome.storage.local.set({ reloadedFor: disk.version });
+    chrome.runtime.reload();
+  } catch {
+    // files mid-update or no network: try again later
+  }
+}
+selfUpdate();
+
+// After a reload, Chrome doesn't put the page script back into open tabs (Firefox does): add it, so the
+// buttons keep working without refreshing. The old copy removes its own buttons.
+chrome.runtime.onInstalled.addListener(({ reason }) => {
+  if (reason !== "update" || FIREFOX || !chrome.scripting) return;
+  chrome.tabs.query({ url: ["http://*/*", "https://*/*"] }).then((tabs) => {
+    for (const t of tabs)
+      chrome.scripting.executeScript({ target: { tabId: t.id, allFrames: true }, files: ["content.js"] }).catch(() => {});
+  }).catch(() => {});
 });
