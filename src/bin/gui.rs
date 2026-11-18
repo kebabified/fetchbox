@@ -150,7 +150,7 @@ impl App {
 
     /// Installed copy: download the installer, check it, run it and close. Portable copy: open the release page.
     fn install_update(&self, release: Release) {
-        let Some(asset) = release.installer.clone().filter(|_| !paths::is_portable()) else {
+        let Some(asset) = release.installer.clone().filter(|_| paths::is_installed()) else {
             win::open_web(&release.page);
             return;
         };
@@ -255,7 +255,7 @@ impl App {
                     }
                     ui.label(RichText::new(format!("Fetchbox {} is available", r.version)).strong());
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                        let auto = r.installer.is_some() && !paths::is_portable();
+                        let auto = r.installer.is_some() && paths::is_installed();
                         let go = primary_button(ui, if auto { "Update" } else { "Download" })
                             .on_hover_text(if auto { "Download, install and reopen Fetchbox" } else { "Open the release page" });
                         if go.clicked() {

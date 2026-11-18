@@ -93,7 +93,7 @@ Your browser asks for permission once. Fetchbox then uses that site's login for 
   **Update yt-dlp**, and **Update cobalt** if you use it.
 - **Updates**: when the window opens, Fetchbox asks GitHub whether there's a newer version and shows
   a bar if there is. **Update** downloads the installer, checks it and installs it, then reopens Fetchbox.
-  A portable copy opens the download page instead. Turn this off, or check by hand, under Settings → About.
+  A portable or unzipped copy opens the download page instead. Turn this off, or check by hand, under Settings → About.
   The browser extension comes along: Chrome-family browsers switch to the new one within a minute of
   using it, without restarting or refreshing pages. Firefox updates its add-on by itself.
 - **Privacy**: nothing is sent anywhere except to the site you're downloading from, and to GitHub for the

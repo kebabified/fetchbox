@@ -216,7 +216,7 @@ fn explain(err: String, sent_login: bool) -> String {
 }
 
 // ── yt-dlp ──
-fn ytdlp_args(job: &Job, ffmpeg: Option<&Path>, temp: &Path) -> Vec<String> {
+fn ytdlp_args(job: &Job, ffmpeg: Option<&Path>, node: Option<&Path>, temp: &Path) -> Vec<String> {
     let o = &job.opts;
     let mut tmpl = match o.filename.as_str() {
         "title [id]" => "%(title).150B [%(id)s].%(ext)s",
@@ -263,6 +263,10 @@ fn ytdlp_args(job: &Job, ffmpeg: Option<&Path>, temp: &Path) -> Vec<String> {
     ];
     if let Some(ff) = ffmpeg {
         a.extend([s("--ffmpeg-location"), ff.to_string_lossy().into_owned()]);
+    }
+    if let Some(node) = node {
+        // YouTube's signature / "n" challenges: the solver scripts ship inside yt-dlp, this runs them
+        a.extend([s("--js-runtimes"), format!("node:{}", node.display())]);
     }
     let mut final_ext = o.container.as_str();
     match o.mode.as_str() {
@@ -312,7 +316,22 @@ fn run_ytdlp(job: &Job) -> Result<(), Fail> {
     let out_dir = PathBuf::from(&o.out_dir);
     std::fs::create_dir_all(&out_dir).map_err(|e| format!("can't use the download folder: {e}"))?;
     let temp = out_dir.join(format!(".fetchbox-{}", job.id));
-    let args = ytdlp_args(job, ffmpeg.as_deref().and_then(Path::parent), &temp);
+    // only YouTube needs it, so other sites never wait for the Node.js download
+    let node = if is_youtube(&job.url) {
+        match crate::cobalt::ensure_node(&status) {
+            Ok(p) => Some(p),
+            Err(e) => {
+                crate::util::log("service", &format!("Node.js unavailable, YouTube formats may be missing: {e}"));
+                None
+            }
+        }
+    } else {
+        None
+    };
+    if job.cancelled() {
+        return Err(Fail::Cancelled);
+    }
+    let args = ytdlp_args(job, ffmpeg.as_deref().and_then(Path::parent), node.as_deref(), &temp);
 
     job.set_progress(None, "yt-dlp  ·  fetching info…");
     let mut child = quiet_command(&exe)
@@ -605,7 +624,8 @@ mod tests {
     #[test]
     fn url_is_never_an_option() {
         let job = Job::new(1, "--exec=calc".into(), Settings::default(), None);
-        let args = ytdlp_args(&job, None, Path::new("t"));
+        let args = ytdlp_args(&job, None, Some(Path::new("n.exe")), Path::new("t"));
+        assert!(args.windows(2).any(|w| w[0] == "--js-runtimes" && w[1] == "node:n.exe"));
         let dashdash = args.iter().position(|a| a == "--").unwrap();
         assert_eq!(args.len(), dashdash + 2);
         assert!(args.contains(&"--ignore-config".to_string()));

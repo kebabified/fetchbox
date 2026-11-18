@@ -23,6 +23,13 @@ pub fn is_portable() -> bool {
     exe_dir().join("portable.txt").is_file()
 }
 
+/// A copy the installer put here (it leaves its uninstaller next to the programs). Only this kind updates
+/// itself: the installer replaces these same files, so the restarted app stays on the same pinned taskbar
+/// icon. Any other copy would get a second Fetchbox installed beside it.
+pub fn is_installed() -> bool {
+    !is_portable() && exe_dir().join("unins000.exe").is_file()
+}
+
 pub fn settings_dir() -> PathBuf {
     if is_portable() {
         exe_dir().join("settings")

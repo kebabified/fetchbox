@@ -10,7 +10,7 @@ use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 
 use sha2::{Digest, Sha256};
-use ureq::tls::{TlsConfig, TlsProvider};
+use ureq::tls::{RootCerts, TlsConfig, TlsProvider};
 use ureq::Agent;
 
 use crate::paths::runtime_dir;
@@ -27,7 +27,9 @@ pub type Report<'a> = &'a (dyn Fn(&str) + Sync);
 fn agent_with(global_timeout: Option<Duration>) -> Agent {
     Agent::new_with_config(
         Agent::config_builder()
-            .tls_config(TlsConfig::builder().provider(TlsProvider::NativeTls).build()) // Windows' own TLS + certificate store
+            // Windows' own TLS and certificate store. ureq defaults to a built-in root list even with native-tls,
+            // which lacks newer CAs (nodejs.org's failed with "unable to find any user-specified roots").
+            .tls_config(TlsConfig::builder().provider(TlsProvider::NativeTls).root_certs(RootCerts::PlatformVerifier).build())
             .user_agent(crate::USER_AGENT)
             .http_status_as_error(false)
             .timeout_connect(Some(Duration::from_secs(20)))

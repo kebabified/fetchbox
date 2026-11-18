@@ -179,7 +179,7 @@ impl LocalCobalt {
 
     fn start(&self) -> Result<String, String> {
         let report = |t: &str| self.set(State::Setup, t);
-        install_node(&report)?;
+        ensure_node(&report)?;
         fetch_cobalt(&report)?;
         install_deps(&report)?;
 
@@ -273,6 +273,15 @@ fn kill_stale() {
         }
     }
     let _ = std::fs::remove_file(pid_file());
+}
+
+/// Make sure the portable Node.js is installed; returns node.exe. cobalt runs on it, and yt-dlp uses it
+/// to solve YouTube's JavaScript challenges (without one, signed-in requests get no video formats).
+pub fn ensure_node(report: Report) -> Result<PathBuf, String> {
+    static LOCK: Mutex<()> = Mutex::new(());
+    let _guard = LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    install_node(report)?;
+    Ok(node_exe())
 }
 
 fn install_node(report: Report) -> Result<(), String> {
