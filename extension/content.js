@@ -263,9 +263,25 @@
       ox = cr.left + parseFloat(cs.borderLeftWidth) - c.scrollLeft;
       oy = cr.top + parseFloat(cs.borderTopWidth) - c.scrollTop;
     }
-    const x = (a.corner === "tl" ? r.left + GAP : r.right - GAP - BTN) - ox;
-    a.pin.style.left = `${Math.round(x)}px`;
-    a.pin.style.top = `${Math.round(r.top + GAP - oy)}px`;
+    const bx = a.corner === "tl" ? r.left + GAP : r.right - GAP - BTN, by = r.top + GAP;
+    a.pin.style.left = `${Math.round(bx - ox)}px`;
+    a.pin.style.top = `${Math.round(by - oy)}px`;
+    if (clippedAway(el, c, bx, by)) a.pin.style.display = "none";
+  }
+
+  // The post is cut off by a box that doesn't clip our pin (a scrolled playlist panel whose rows sit
+  // above or below its visible part, while the pin lives outside that box): hide the button with it.
+  function clippedAway(el, cont, bx, by) {
+    for (let p = el.parentElement; p && p !== document.body && p !== document.documentElement; p = p.parentElement) {
+      if (p.contains(cont)) break; // this box and everything above it clip the pin too
+      const s = getComputedStyle(p);
+      const cx = s.overflowX !== "visible", cy = s.overflowY !== "visible";
+      if (!cx && !cy) continue;
+      const pr = p.getBoundingClientRect();
+      if (cx && (bx < pr.left || bx + BTN > pr.right)) return true;
+      if (cy && (by < pr.top || by + BTN > pr.bottom)) return true;
+    }
+    return false;
   }
 
   let layoutQueued = false;
@@ -345,6 +361,8 @@
     const out = [];
     for (const a of document.querySelectorAll(selector)) {
       if (!a.querySelector(MEDIA)) continue;
+      // a row link wrapping its own thumbnail link (YouTube's playlist panel): the inner link gets the button
+      if ([...a.querySelectorAll(selector)].some((i) => i.querySelector(MEDIA))) continue;
       const r = a.getBoundingClientRect();
       if (r.width < 100 || r.height < 56) continue;
       const url = norm(abs(a.getAttribute("href")));
