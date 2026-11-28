@@ -681,15 +681,21 @@ fn fonts(ctx: &egui::Context) {
     let dir = PathBuf::from(std::env::var_os("WINDIR").unwrap_or_else(|| "C:/Windows".into())).join("Fonts");
     let mut defs = egui::FontDefinitions::default();
     let mut add = |file: &str, first: bool| {
-        if let Ok(bytes) = std::fs::read(dir.join(file)) {
-            defs.font_data.insert(file.to_string(), Arc::new(egui::FontData::from_owned(bytes)));
-            for family in [egui::FontFamily::Proportional, egui::FontFamily::Monospace] {
-                let list = defs.families.entry(family.clone()).or_default();
-                if first && family == egui::FontFamily::Proportional {
-                    list.insert(0, file.to_string());
-                } else {
-                    list.push(file.to_string());
-                }
+        // mapped, not read: the CJK fallbacks alone are ~45 MB, and only the glyphs drawn get loaded
+        let data = match win::map_file_forever(&dir.join(file)) {
+            Some(bytes) => egui::FontData::from_static(bytes),
+            None => match std::fs::read(dir.join(file)) {
+                Ok(bytes) => egui::FontData::from_owned(bytes),
+                Err(_) => return,
+            },
+        };
+        defs.font_data.insert(file.to_string(), Arc::new(data));
+        for family in [egui::FontFamily::Proportional, egui::FontFamily::Monospace] {
+            let list = defs.families.entry(family.clone()).or_default();
+            if first && family == egui::FontFamily::Proportional {
+                list.insert(0, file.to_string());
+            } else {
+                list.push(file.to_string());
             }
         }
     };

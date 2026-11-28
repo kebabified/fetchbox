@@ -286,3 +286,24 @@ pub fn focus_window(title: &str) -> bool {
         SetForegroundWindow(hwnd) != 0
     }
 }
+
+/// Map a file read-only for the rest of the program's life. Its pages stay backed by the file, so they
+/// don't count as this program's memory and only the parts in use are loaded (the window's fonts).
+pub fn map_file_forever(path: &Path) -> Option<&'static [u8]> {
+    use std::os::windows::io::AsRawHandle;
+    use windows_sys::Win32::System::Memory::{CreateFileMappingW, MapViewOfFile, FILE_MAP_READ, PAGE_READONLY};
+    let file = File::open(path).ok()?;
+    let len = usize::try_from(file.metadata().ok()?.len()).ok().filter(|&n| n > 0)?;
+    unsafe {
+        let map = CreateFileMappingW(file.as_raw_handle() as HANDLE, null(), PAGE_READONLY, 0, 0, null());
+        if map.is_null() {
+            return None;
+        }
+        let view = MapViewOfFile(map, FILE_MAP_READ, 0, 0, 0);
+        CloseHandle(map); // the view keeps the mapping (and the file) open
+        if view.Value.is_null() {
+            return None;
+        }
+        Some(std::slice::from_raw_parts(view.Value as *const u8, len))
+    }
+}

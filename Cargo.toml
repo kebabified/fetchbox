@@ -22,6 +22,8 @@ path = "src/bin/host.rs"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 fancy-regex = "0.20"
+regex = { version = "1", default-features = false, features = ["std", "perf"] }
+regex-syntax = { version = "0.8", default-features = false, features = ["std"] }
 ureq = { version = "3.5.2", default-features = false, features = ["native-tls", "json", "gzip"] }
 sha2 = "0.11.1"
 base64 = "0.23.1"
